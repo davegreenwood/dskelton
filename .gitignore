@@ -1,0 +1,14 @@
+*
+
+!.gitignore
+!README.md
+
+!dskeleton
+!dskeleton/*.py
+!dskeleton/data
+!dskeleton/data/*.json
+
+!tests
+!tests/*.py
+
+!setup.py
