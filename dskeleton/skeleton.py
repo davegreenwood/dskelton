@@ -1,3 +1,5 @@
+# pylint: disable=relative-beyond-top-level,no-member,not-callable
+
 import torch
 from .data import SKELETONS
 from .geometry import (
@@ -44,15 +46,15 @@ class Skeleton(torch.nn.Module):
 
         m0 = torch.zeros(n, 4, 4, device=device)
         m0[:, 3, 3] = 1.0
-        m0[:, :3, :3] = rot[:, 0, ...]
-        m0[:, :3, 3] = self.xyz[:, 0, :]
+        m0[:, :3, :3] = rot[:, 0]
+        m0[:, :3, 3] = self.xyz[:, 0]
         M = [m0]
 
         for parent, child in zip(self.parent_idx, self.child_idx):
             m = torch.zeros(n, 4, 4, device=device)
             m[:, 3, 3] = 1.0
-            m[:, :3, :3] = rot[:, child, ...]
-            m[:, :3, 3] = self.xyz[:, child, :] - self.xyz[:, parent, :]
+            m[:, :3, :3] = rot[:, child]
+            m[:, :3, 3] = self.xyz[:, child] - self.xyz[:, parent]
             M.append(M[parent].clone() @ m)
 
         return torch.stack(M, dim=1)[..., :3, 3]
@@ -67,15 +69,13 @@ class Skeleton(torch.nn.Module):
         # start with zero rotations
         R = torch.eye(3, device=device)[
             None, None, ...].repeat(n, self.n, 1, 1)
-        # start with the unposed skeleton
-        ref_xyz = self._rotation2points(R).clone()
 
         for parent, child in zip(self.parent_idx, self.child_idx):
+            ref_xyz = self._rotation2points(R).clone()
             a = ref_xyz[:, child] - ref_xyz[:, parent]
             b = xyz[:, child] - xyz[:, parent]
             r = batch_vector_rotation(a, b)
             R[:, parent] = r
-            ref_xyz = self._rotation2points(R).clone()
         return R
 
     def angles(self, xyz: torch.tensor) -> torch.Tensor:
