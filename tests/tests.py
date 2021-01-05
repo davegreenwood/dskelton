@@ -34,11 +34,6 @@ class SkeletonTests(unittest.TestCase):
         self.assertGreater(skel.lengths.sum(), k)
         self.assertTrue((skel.lengths > 0).all())
 
-    def test_parent_chain(self):
-        skel = Skeleton()
-        s = skel._parent_chain(2)
-        self.assertEqual(s, [0, 1, 2])
-
 
 class GeometryTests(unittest.TestCase):
 
