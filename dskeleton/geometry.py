@@ -68,8 +68,8 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     R = torch.zeros(n, 3, 3, device=a.device)
 
     # if vectors a & b coincide - mask out
-    pos_mask = torch.isclose(a, b).sum(-1) > 0
-    neg_mask = torch.isclose(a, -b).sum(-1) > 0
+    pos_mask = torch.isclose(a, b).sum(-1) > 2
+    neg_mask = torch.isclose(a, -b).sum(-1) > 2
     R[pos_mask, ...] = torch.eye(3, device=a.device)
     R[neg_mask, ...] = -torch.eye(3, device=a.device)
 
