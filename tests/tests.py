@@ -44,18 +44,20 @@ class SkeletonTests(unittest.TestCase):
         self.assertEqual(len(ang_shape), 3)
 
     def test_default(self):
+        """Test number of lengths is greater than 0."""
         skel = Skeleton()
         self.assertGreater(skel.n, 0)
 
     def test_body25(self):
+        """Test body 25 has 25 points"""
         skel = Skeleton("BODY_25")
         self.assertEqual(skel.n, 25)
 
     def test_calculate_length(self):
+        """Test sum of lengths is greater than k = self.n."""
         skel = Skeleton("UDH_UPPER")
         k = skel.lengths.sum()
         skel.calculate_lengths(self.pts)
-        print(torch.isnan(skel.lengths).any())
         self.assertGreater(skel.lengths.sum(), k)
         self.assertTrue((skel.lengths > 0).all())
 
@@ -64,6 +66,14 @@ class SkeletonTests(unittest.TestCase):
         skel = Skeleton("TEST")
         xyz = skel._rotation2points(ZR[None, ...])
         self.assertTrue(torch.allclose(skel.xyz[0], xyz))
+
+    def test_rotation2points2(self):
+        """Test rotation retruns test points."""
+        tol = 1e-5
+        skel = Skeleton("TEST")
+        xyz = skel._rotation2points(R[None, ...])
+        result = torch.allclose(X, xyz[0, ...], atol=tol, rtol=tol)
+        self.assertTrue(result)
 
 
 class GeometryTests(unittest.TestCase):
