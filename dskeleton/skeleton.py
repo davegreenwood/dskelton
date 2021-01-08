@@ -43,23 +43,20 @@ class Skeleton(torch.nn.Module):
         batch of rotation matrices. Requires valid reference skeleton xyz.
         """
         n, device = rot.shape[0], rot.device
-
         M = [torch.zeros(n, 4, 4, device=device) for _ in range(self.n)]
-        # set root matrix
-        r = rot[:, 0]
-        t = r @ self.xyz[:, 0][..., None]
-        M[0][:, 3, 3] = 1.0
-        M[0][:, :3, :3] = r
-        M[0][:, :3, 3] = t[..., 0]
 
-        for parent, child in zip(self.parent_idx, self.child_idx):
-            r = rot[:, child]
-            t = r @ (self.xyz[:, child] - self.xyz[:, parent])[..., None]
+        def _m(r, t):
             m = torch.zeros(n, 4, 4, device=device)
             m[:, 3, 3] = 1.0
             m[:, :3, :3] = r
-            m[:, :3, 3] = t[..., 0]
-            M[child] = M[parent].clone() @ m
+            m[:, :3, 3] = (r @ t[..., None])[..., 0]
+            return m
+
+        M[0] = _m(rot[:, 0], self.xyz[:, 0])
+
+        for p, c in zip(self.parent_idx, self.child_idx):
+            m = _m(rot[:, c], self.xyz[:, c] - self.xyz[:, p])
+            M[c] = M[p].clone() @ m
 
         return torch.stack(M, dim=1)[..., :3, 3]
 
