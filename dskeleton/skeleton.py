@@ -44,18 +44,22 @@ class Skeleton(torch.nn.Module):
         """
         n, device = rot.shape[0], rot.device
 
-        m0 = torch.zeros(n, 4, 4, device=device)
-        m0[:, 3, 3] = 1.0
-        m0[:, :3, :3] = rot[:, 0]
-        m0[:, :3, 3] = self.xyz[:, 0]
-        M = [m0]
+        M = [torch.zeros(n, 4, 4, device=device) for _ in range(self.n)]
+        # set root matrix
+        r = rot[:, 0]
+        t = r @ self.xyz[:, 0][..., None]
+        M[0][:, 3, 3] = 1.0
+        M[0][:, :3, :3] = r
+        M[0][:, :3, 3] = t[..., 0]
 
         for parent, child in zip(self.parent_idx, self.child_idx):
+            r = rot[:, child]
+            t = r @ (self.xyz[:, child] - self.xyz[:, parent])[..., None]
             m = torch.zeros(n, 4, 4, device=device)
             m[:, 3, 3] = 1.0
-            m[:, :3, :3] = rot[:, child]
-            m[:, :3, 3] = self.xyz[:, child] - self.xyz[:, parent]
-            M.append(M[parent].clone() @ m)
+            m[:, :3, :3] = r
+            m[:, :3, 3] = t[..., 0]
+            M[child] = M[parent].clone() @ m
 
         return torch.stack(M, dim=1)[..., :3, 3]
 
@@ -83,7 +87,6 @@ class Skeleton(torch.nn.Module):
         Return the angles between each joint in 6d rotation matrices.
         see: https://zhouyisjtu.github.io/project_rotation/rotation.html
         """
-
         R = self._points2rotation(xyz)
         return matrix_to_rotation_6d(R)
 
@@ -92,6 +95,5 @@ class Skeleton(torch.nn.Module):
         Return the 3d XYZ point locations of the landmarks. 
         Requires valid reference skeleton xyz.
         """
-
         angles = rotation_6d_to_matrix(angles)
         return self._rotation2points(angles)
