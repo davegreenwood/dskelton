@@ -75,6 +75,14 @@ class SkeletonTests(unittest.TestCase):
         result = torch.allclose(X, xyz[0, ...], atol=tol, rtol=tol)
         self.assertTrue(result)
 
+    def test_points2rotation1(self):
+        """Test that X points returns R rotations."""
+        tol = 1e-5
+        skel = Skeleton("TEST")
+        rot = skel._points2rotation(X[None, ...])
+        result = torch.allclose(R, rot, atol=tol, rtol=tol)
+        self.assertTrue(result)
+
 
 class GeometryTests(unittest.TestCase):
 

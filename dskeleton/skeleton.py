@@ -63,20 +63,23 @@ class Skeleton(torch.nn.Module):
         """
         Return the angles between each joint in 9dof rotation matrices.
         Requires a valid reference skeleton at self.xyz.
-        TODO: investigate a better algorithm - this is n^2 for n joints.
+        Root rotation cannot be determined from landmarks, so is identity.
         """
         n, device = xyz.shape[0], xyz.device
         # start with zero rotations
-        R = torch.eye(3, device=device)[
-            None, None, ...].repeat(n, self.n, 1, 1)
+        R = [eye_batch(n, 3, device) for _ in range(self.n)]
+        Rs = [eye_batch(n, 3, device) for _ in range(self.n)]
 
-        for parent, child in zip(self.parent_idx, self.child_idx):
-            ref_xyz = self._rotation2points(R).clone()
-            a = ref_xyz[:, child] - ref_xyz[:, parent]
-            b = xyz[:, child] - xyz[:, parent]
-            r = batch_vector_rotation(a, b)
-            R[:, parent] = r
-        return R
+        def _m(p, c):
+            t = self.xyz[:, c] - self.xyz[:, p]
+            a = (Rs[p] @ t[..., None])[..., 0]
+            b = xyz[:, c] - xyz[:, p]
+            R[c] = batch_vector_rotation(a, b)
+            Rs[c] = Rs[p] @ R[c].clone()
+
+        for p, c in zip(self.parent_idx, self.child_idx):
+            _m(p, c)
+        return torch.stack(R, dim=1)
 
     def angles(self, xyz: torch.tensor) -> torch.Tensor:
         """
