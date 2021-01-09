@@ -2,6 +2,11 @@ import torch
 import torch.nn.functional as F
 
 
+def eye_batch(batch_n, eye_n, device):
+    """Return an identity matrix of size eye_n, repeated batch_n times."""
+    return torch.eye(eye_n, device=device)[None, ...].repeat(batch_n, 1, 1)
+
+
 def rotation_6d_to_matrix(d6: torch.Tensor) -> torch.Tensor:
     """
     Converts 6D rotation representation by Zhou et al. [1] to rotation matrix
