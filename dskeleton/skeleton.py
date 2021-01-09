@@ -2,8 +2,8 @@
 
 import torch
 from .data import SKELETONS
-from .geometry import (
-    rotation_6d_to_matrix, matrix_to_rotation_6d,  batch_vector_rotation)
+from .geometry import (eye_batch, rotation_6d_to_matrix,
+                       matrix_to_rotation_6d,  batch_vector_rotation)
 
 
 class Skeleton(torch.nn.Module):
@@ -43,11 +43,10 @@ class Skeleton(torch.nn.Module):
         batch of rotation matrices. Requires valid reference skeleton xyz.
         """
         n, device = rot.shape[0], rot.device
-        M = [torch.zeros(n, 4, 4, device=device) for _ in range(self.n)]
+        M = [eye_batch(n, 4, device) for _ in range(self.n)]
 
         def _m(r, t):
-            m = torch.zeros(n, 4, 4, device=device)
-            m[:, 3, 3] = 1.0
+            m = eye_batch(n, 4, device) 
             m[:, :3, :3] = r
             m[:, :3, 3] = (r @ t[..., None])[..., 0]
             return m
@@ -55,8 +54,8 @@ class Skeleton(torch.nn.Module):
         M[0] = _m(rot[:, 0], self.xyz[:, 0])
 
         for p, c in zip(self.parent_idx, self.child_idx):
-            m = _m(rot[:, c], self.xyz[:, c] - self.xyz[:, p])
-            M[c] = M[p].clone() @ m
+            r, t = rot[:, c], self.xyz[:, c] - self.xyz[:, p]
+            M[c] = M[p].clone() @ _m(r, t)
 
         return torch.stack(M, dim=1)[..., :3, 3]
 
