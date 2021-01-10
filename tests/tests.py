@@ -93,7 +93,7 @@ class SkeletonTests(unittest.TestCase):
         self.assertTrue(result)
 
     def test_roundtrip2(self):
-        """Test that X points returns R rotations that make X points."""
+        """Test that R rotations returns xyz points  that make R rotations."""
         tol = 1e-5
         skel = Skeleton("TEST")
         xyz = skel._rotation2points(R[None, ...])
