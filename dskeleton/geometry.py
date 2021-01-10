@@ -81,7 +81,7 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     # where vectors a & b do not coincide
     inv_mask = ~ (pos_mask + neg_mask)
     k = inv_mask.sum()
-    eye = torch.eye(3, device=a.device)[None, ...].repeat(k, 1, 1)
+    eye = eye_batch(k, 3, a.device)
 
     # cross and dot products
     crs = torch.cross(a[inv_mask, ...], b[inv_mask, ...])
@@ -89,12 +89,12 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     
     # skew-symmetric cross-product matrix
     skew = torch.zeros(k, 3, 3, device=a.device)
-    skew[..., 0, 1] = -crs[..., 2]
-    skew[..., 0, 2] = crs[..., 1]
-    skew[..., 1, 0] = crs[..., 2]
-    skew[..., 1, 2] = -crs[..., 0]
-    skew[..., 2, 0] = -crs[..., 1]
-    skew[..., 2, 1] = crs[..., 0]
+    skew[:, 0, 1] = -crs[:, 2]
+    skew[:, 0, 2] = crs[:, 1]
+    skew[:, 1, 0] = crs[:, 2]
+    skew[:, 1, 2] = -crs[:, 0]
+    skew[:, 2, 0] = -crs[:, 1]
+    skew[:, 2, 1] = crs[:, 0]
 
     R[inv_mask, ...] = eye + skew + skew @ skew / (1 + dot)
     return R
