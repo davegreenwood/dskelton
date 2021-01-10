@@ -84,6 +84,7 @@ class Skeleton(torch.nn.Module):
     def angles(self, xyz: torch.tensor) -> torch.Tensor:
         """
         Return the angles between each joint in 6d rotation matrices.
+        xyz: torch.tensor of shape [N_batches, n_joints, 6]
         see: https://zhouyisjtu.github.io/project_rotation/rotation.html
         """
         R = self._points2rotation(xyz)
@@ -92,6 +93,7 @@ class Skeleton(torch.nn.Module):
     def points(self, angles: torch.tensor) -> torch.Tensor:
         """
         Return the 3d XYZ point locations of the landmarks. 
+        angles: torch.tensor of shape [N_batches, n_joints, 6]
         Requires valid reference skeleton xyz.
         """
         angles = rotation_6d_to_matrix(angles)
