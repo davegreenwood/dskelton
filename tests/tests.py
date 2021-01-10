@@ -83,6 +83,15 @@ class SkeletonTests(unittest.TestCase):
         result = torch.allclose(R, rot, atol=tol, rtol=tol)
         self.assertTrue(result)
 
+    def test_roundtrip(self):
+        """Test that X points returns R rotations that make X points."""
+        tol = 1e-5
+        skel = Skeleton("TEST")
+        rot = skel._points2rotation(X[None, ...])
+        xyz = skel._rotation2points(rot)
+        result = torch.allclose(X, xyz, atol=tol, rtol=tol)
+        self.assertTrue(result)
+
 
 class GeometryTests(unittest.TestCase):
 

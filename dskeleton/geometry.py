@@ -60,10 +60,10 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 
     See: 
     https://math.stackexchange.com/a/476311/812637
-    
+
     """
     n, m = a.shape[0], b.shape[0]
-    assert n == m , f"a ({n}) and b ({m}) must be same size first dimension"
+    assert n == m, f"a ({n}) and b ({m}) must be same size first dimension"
 
     # normalise
     a = F.normalize(a, dim=-1)
@@ -86,7 +86,7 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     # cross and dot products
     crs = torch.cross(a[inv_mask, ...], b[inv_mask, ...])
     dot = a[inv_mask, None, :] @ b[inv_mask, :, None]
-    
+
     # skew-symmetric cross-product matrix
     skew = torch.zeros(k, 3, 3, device=a.device)
     skew[:, 0, 1] = -crs[:, 2]
