@@ -25,7 +25,6 @@ class Skeleton(torch.nn.Module):
 
         self.register_buffer("parent_idx", torch.tensor(d["parent"]))
         self.register_buffer("child_idx", torch.tensor(d["child"]))
-        self.register_buffer("lengths", torch.ones(self.n))
         self.register_buffer("xyz", xyz)
 
     def _rotation2points(self, rot):
