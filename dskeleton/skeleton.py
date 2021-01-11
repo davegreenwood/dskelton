@@ -27,15 +27,6 @@ class Skeleton(torch.nn.Module):
         self.register_buffer("child_idx", torch.tensor(d["child"]))
         self.register_buffer("lengths", torch.ones(self.n))
         self.register_buffer("xyz", xyz)
-        self.calculate_lengths(self.xyz)
-
-    def calculate_lengths(self, xyz: torch.tensor):
-        """
-        From xyz data, calculate the bone lengths.
-        Data is shape: [num_examples, num_bones, 3].
-        """
-        diff = xyz[:, self.child_idx] - xyz[:, self.parent_idx]
-        self.lengths = torch.linalg.norm(diff, dim=-1)
 
     def _rotation2points(self, rot):
         """

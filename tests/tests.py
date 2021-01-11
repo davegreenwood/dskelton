@@ -53,14 +53,6 @@ class SkeletonTests(unittest.TestCase):
         skel = Skeleton("BODY_25")
         self.assertEqual(skel.n, 25)
 
-    def test_calculate_length(self):
-        """Test sum of lengths is greater than k = self.n."""
-        skel = Skeleton("UDH_UPPER")
-        k = skel.lengths.sum()
-        skel.calculate_lengths(self.pts)
-        self.assertGreater(skel.lengths.sum(), k)
-        self.assertTrue((skel.lengths > 0).all())
-
     def test_rotation2points1(self):
         """Test that identity does not apply rotation."""
         skel = Skeleton("TEST")
