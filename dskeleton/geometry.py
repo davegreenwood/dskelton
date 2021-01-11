@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 
-def eye_batch(batch_n, eye_n, device):
+def eye_batch(batch_n, eye_n, device, dtype=torch.float32):
     """Return an identity matrix of size eye_n, repeated batch_n times."""
     return torch.eye(eye_n, device=device)[None, ...].repeat(batch_n, 1, 1)
 
@@ -62,7 +62,7 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     https://math.stackexchange.com/a/476311/812637
 
     """
-    n, m = a.shape[0], b.shape[0]
+    n, m, device, dtype = a.shape[0], b.shape[0], a.device, a.dtype
     assert n == m, f"a ({n}) and b ({m}) must be same size first dimension"
 
     # normalise
@@ -70,25 +70,25 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     b = F.normalize(b, dim=-1)
 
     # store results
-    R = torch.zeros(n, 3, 3, device=a.device)
+    R = torch.zeros(n, 3, 3, dtype=dtype, device=device)
 
     # if vectors a & b coincide - mask out
     pos_mask = torch.isclose(a, b).sum(-1) > 2
     neg_mask = torch.isclose(a, -b).sum(-1) > 2
-    R[pos_mask, ...] = torch.eye(3, device=a.device)
-    R[neg_mask, ...] = -torch.eye(3, device=a.device)
+    R[pos_mask, ...] = torch.eye(3, dtype=dtype, device=device)
+    R[neg_mask, ...] = -torch.eye(3, dtype=dtype, device=device)
 
     # where vectors a & b do not coincide
     inv_mask = ~ (pos_mask + neg_mask)
     k = inv_mask.sum()
-    eye = eye_batch(k, 3, a.device)
+    eye = eye_batch(k, 3, device, dtype)
 
     # cross and dot products
     crs = torch.cross(a[inv_mask, ...], b[inv_mask, ...])
     dot = a[inv_mask, None, :] @ b[inv_mask, :, None]
 
     # skew-symmetric cross-product matrix
-    skew = torch.zeros(k, 3, 3, device=a.device)
+    skew = torch.zeros(k, 3, 3, dtype=dtype, device=device)
     skew[:, 0, 1] = -crs[:, 2]
     skew[:, 0, 2] = crs[:, 1]
     skew[:, 1, 0] = crs[:, 2]
