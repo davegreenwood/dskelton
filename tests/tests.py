@@ -4,7 +4,8 @@ import torch
 import torch.nn.functional as F
 
 from dskeleton.skeleton import Skeleton
-from dskeleton.geometry import batch_vector_rotation
+from dskeleton.geometry import (
+    batch_vector_rotation, rotation_6d_to_matrix, eye_batch)
 
 
 ZR = torch.eye(3)[None, ...].repeat(4, 1, 1)
@@ -115,6 +116,9 @@ class SkeletonTests(unittest.TestCase):
 
 class GeometryTests(unittest.TestCase):
 
+    pts = torch.tensor(np.load("tests/pts100.npy"))
+    ang = torch.tensor(np.load("tests/ang100.npy"))
+
     def test_rotation1(self):
         n = 1
         a = F.normalize(torch.rand(n, 3))
@@ -146,3 +150,24 @@ class GeometryTests(unittest.TestCase):
 
         r = batch_vector_rotation(a, b)
         self.assertTrue(torch.allclose(_r, r))
+
+    def test_6dtorotation(self):
+        """Test that the 6d to rotation produces valid rotation matrices"""
+        r = rotation_6d_to_matrix(self.ang).reshape(-1, 3, 3)
+        ones = torch.ones(r.shape[0])
+        result = torch.allclose(torch.det(r), ones)
+        self.assertTrue(result)
+
+    def test_rotation4(self):
+        """Test that rotation matrices are True rotations."""
+        n = 7
+        tol = 1e-6
+        a = F.normalize(torch.rand(n, 3))
+        b = F.normalize(torch.rand(n, 3))
+        r = batch_vector_rotation(a, b)
+        eye = eye_batch(n, 3, a.device)
+        I = r @ torch.transpose(r, 1, 2)
+        d = torch.det(r)        
+        ones = torch.ones(n)
+        self.assertTrue(torch.allclose(I, eye, atol=tol, rtol=tol))
+        self.assertTrue(torch.allclose(d, ones))
