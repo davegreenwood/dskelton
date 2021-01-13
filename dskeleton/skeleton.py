@@ -9,9 +9,12 @@ from .geometry import (eye_batch, rotation_6d_to_matrix,
 class Skeleton(torch.nn.Module):
     """Base class of skeleton."""
 
-    def __init__(self, skeleton=None):
+    def __init__(self, skeleton=None, **kwargs):
         """Load the default skeleton values."""
         super().__init__()
+        self.device = kwargs.get("device", torch.device("cpu"))
+        self.dtype = kwargs.get("dtype", torch.float32)
+
         d = SKELETONS.get(skeleton, SKELETONS["UDH_UPPER"])
         self.names = d["names"]
         self.n = len(self.names)
@@ -19,12 +22,17 @@ class Skeleton(torch.nn.Module):
         # there may not be a reference point set
         _xyz = d.get("xyz", None)
         if _xyz is None:
-            xyz = torch.ones(1, self.n, 3)
+            xyz = torch.ones(
+                1, self.n, 3, device=self.device, dtype=self.dtype)
         else:
-            xyz = torch.tensor(_xyz)[None, ...]
+            xyz = torch.tensor(
+                _xyz, device=self.device, dtype=self.dtype)[None, ...]
 
-        self.register_buffer("parent_idx", torch.tensor(d["parent"]))
-        self.register_buffer("child_idx", torch.tensor(d["child"]))
+        parent = torch.tensor(d["parent"], device=self.device)
+        child = torch.tensor(d["child"], device=self.device)
+
+        self.register_buffer("parent_idx", parent)
+        self.register_buffer("child_idx", child)
         self.register_buffer("xyz", xyz)
 
     def _rotation2points(self, rot):
@@ -32,11 +40,15 @@ class Skeleton(torch.nn.Module):
         Return the XYZ locations of the landmarks, rotated by the 
         batch of rotation matrices. Requires valid reference skeleton xyz.
         """
-        n, device = rot.shape[0], rot.device
-        M = [eye_batch(n, 4, device) for _ in range(self.n)]
+        n = rot.shape[0]
+        device = self.device
+        dtype = self.dtype
+        rot = rot.to(device=device, dtype=dtype)
+
+        M = [eye_batch(n, 4, device, dtype) for _ in range(self.n)]
 
         def _m(r, t):
-            m = eye_batch(n, 4, device) 
+            m = eye_batch(n, 4, device, dtype) 
             m[:, :3, :3] = r
             m[:, :3, 3] = (r @ t[..., None])[..., 0]
             return m
@@ -55,10 +67,14 @@ class Skeleton(torch.nn.Module):
         Requires a valid reference skeleton at self.xyz.
         Root rotation cannot be determined from landmarks, so is identity.
         """
-        n, device = xyz.shape[0], xyz.device
+        n = xyz.shape[0]
+        device = self.device
+        dtype = self.dtype
+        xyz = xyz.to(device=device, dtype=dtype)
+
         # start with zero rotations
-        R = [eye_batch(n, 3, device) for _ in range(self.n)]
-        Rs = [eye_batch(n, 3, device) for _ in range(self.n)]
+        R = [eye_batch(n, 3, device, dtype) for _ in range(self.n)]
+        Rs = [eye_batch(n, 3, device, dtype) for _ in range(self.n)]
 
         def _m(p, c):
             t = self.xyz[:, c] - self.xyz[:, p]
