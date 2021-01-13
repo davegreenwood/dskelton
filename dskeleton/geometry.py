@@ -81,21 +81,47 @@ def batch_vector_rotation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 
     # where vectors a & b do not coincide
     inv_mask = ~ (pos_mask + neg_mask)
-    k = inv_mask.sum()
-    eye = eye_batch(k, 3, device, dtype)
+    R[inv_mask, ...] = _angle_between_R(a, b)
+    return R
 
+
+def _angle_between_R(a, b):
+    """Use rodrigues to find the angle between two unit vectors."""
+    n, device, dtype = a.shape[0], a.device, a.dtype
+    axis = F.normalize(torch.cross(a, b), dim=1)
+    x, y, z = axis[:, 0, ...], axis[:, 1, ...], axis[:, 2, ...]
+    cos = (a[:, None, ...] @ b[:, ..., None])[..., 0, 0]
+    sin = torch.sqrt(1 - cos ** 2)
+    csm = 1.0 - cos
+
+    # Rodrigues formula
+    R = torch.zeros(n, 3, 3, device=device, dtype=dtype)
+    R[:, 0, 0] = cos + x * x * csm
+    R[:, 1, 0] = z * sin + y * x * csm
+    R[:, 2, 0] = -y * sin + z * x * csm
+    R[:, 0, 1] = -z * sin + x * y * csm
+    R[:, 1, 1] = cos + y * y * csm
+    R[:, 2, 1] = x * sin + z * y * csm
+    R[:, 0, 2] = y * sin + x * z * csm
+    R[:, 1, 2] = -x * sin + y * z * csm
+    R[:, 2, 2] = cos + z * z * csm
+    return R
+
+
+def _angle_between_skew(a, b):
+    """Use skew cross-product to find the angle between two unit vectors."""
+    n, device, dtype = a.shape[0], a.device, a.dtype
     # cross and dot products
-    crs = torch.cross(a[inv_mask, ...], b[inv_mask, ...])
-    dot = a[inv_mask, None, :] @ b[inv_mask, :, None]
+    crs = torch.cross(a, b)
+    csp = 1.0 + (a[:, None, ...] @ b[:, ..., None])[..., 0, 0]
+    eye = eye_batch(n, 3, device, dtype)
 
     # skew-symmetric cross-product matrix
-    skew = torch.zeros(k, 3, 3, dtype=dtype, device=device)
+    skew = torch.zeros(n, 3, 3, device=device, dtype=dtype)
     skew[:, 0, 1] = -crs[:, 2]
     skew[:, 0, 2] = crs[:, 1]
     skew[:, 1, 0] = crs[:, 2]
     skew[:, 1, 2] = -crs[:, 0]
     skew[:, 2, 0] = -crs[:, 1]
     skew[:, 2, 1] = crs[:, 0]
-
-    R[inv_mask, ...] = eye + skew + skew @ skew / (1 + dot)
-    return R
+    return eye + skew + skew @ skew / csp
