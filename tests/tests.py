@@ -171,13 +171,3 @@ class GeometryTests(unittest.TestCase):
         ones = torch.ones(n)
         self.assertTrue(torch.allclose(I, eye, atol=tol, rtol=tol))
         self.assertTrue(torch.allclose(d, ones))
-
-    # def test_RT1(self):
-    #     n = 7
-    #     a = F.normalize(torch.rand(n, 3))
-    #     b = F.normalize(torch.rand(n, 3))
-    #     _r = batch_vector_rotation(a, b)
-    #     r = angleBetweenRT(a, b)
-    #     _a = (r @ a[..., None])[..., 0]
-    #     self.assertTrue(torch.allclose(_r, r))
-    #     self.assertTrue(torch.allclose(_a, b))
